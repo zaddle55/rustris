@@ -1,0 +1,10 @@
+[package]
+name = "rustris"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+regex = "1.5.4"
+rand = "0.9.0-alpha.2"
+strum = "0.20.0"
+strum_macros = "0.20.0"
