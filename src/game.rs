@@ -5,6 +5,7 @@ use rand::seq::IteratorRandom;
 use strum::{EnumCount, IntoEnumIterator};
 use strum_macros::{EnumCount as EnumCountMacro, EnumIter};
 
+use std::any::Any;
 use std::str::FromStr;
 use std::time::Duration;
 
@@ -40,10 +41,20 @@ impl FromStr for Shape {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Block {
     shape: Option<Shape>,
     is_empty: bool,
+}
+
+impl Default for Block {
+    fn default() -> Self {
+        Self {
+            shape: None,
+            is_empty: true,
+        }
+    }
+    
 }
 
 #[derive(Debug, Clone)]
@@ -175,6 +186,11 @@ impl Move {
     
 }
 
+struct TimeCounter {
+    time: Duration,
+    is_running: bool,
+}
+
 pub struct Game {
     height: i32,
     width: i32,
@@ -186,18 +202,41 @@ pub struct Game {
 }
 
 impl Game {
+    /// Mask height is the height of the game board that is invisible to the player from the top.
     const MASKED_HEIGHT: i32= 4;
 
-    fn handle_move(&mut self) {
+    pub fn new() -> Self {
+        let height = 20;
+        let width = 10;
+        let cells = vec![vec![Block::default(); width as usize]; height as usize];
+        let acc = vec![0; width as usize];
+        let living_tetromino = Tetromino::random();
+        let next_tetromino = Tetromino::random();
+        let moves = vec![];
+        Self {
+            height,
+            width,
+            cells,
+            acc,
+            living_tetromino,
+            next_tetromino,
+            moves,
+        }
+    }
+
+    pub fn handle_move(&mut self) {
         match self.moves.first() {
             Some(m) => {
                 let mut tetromino = self.living_tetromino.clone();
                 tetromino.consume(&m);
-                for (_, p) in tetromino.points.iter().enumerate() {
-                    if p.x < 0 || p.x >= self.width || p.y >= self.height {
+                if m.is_once {
+                    let _ = self.moves.remove(0);
+                }
+                for (_, p) in self.living_tetromino.points.iter().enumerate() {
+                    if self.is_boundary_collision(&tetromino) {
                         return;
                     }
-                    if p.y >= 0 {
+                    if self.is_block_collision(&tetromino) {
                         if self.cells[p.y as usize][p.x as usize].is_empty {
                             self.cells[p.y as usize][p.x as usize].shape = Some(tetromino.shape);
                             self.cells[p.y as usize][p.x as usize].is_empty = false;
@@ -205,9 +244,6 @@ impl Game {
                             return;
                         }
                     }
-                }
-                if m.is_once {
-                    self.moves.remove(0);
                 }
             }
             None => {}         
@@ -233,6 +269,20 @@ impl Game {
             }
         }
         false
+    }
+
+    fn handle_fusion(&mut self) {
+        for (_, p) in self.living_tetromino.points.iter().enumerate() {
+            if p.y >= 0 {
+                self.cells[p.y as usize][p.x as usize].shape = Some(self.living_tetromino.shape);
+                self.cells[p.y as usize][p.x as usize].is_empty = false;
+            }
+            self.acc[p.x as usize] += 1;
+        }
+    }
+
+    fn handle_eliminate() {
+        
     }
 
 }
